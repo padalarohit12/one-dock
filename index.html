@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ONE DOCK — Multi-site Dashboard</title>
+
+  <!-- Tailwind (CDN) -->
+  <script>tailwind = { config: {} };</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
+              400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
+              800: '#3730a3', 900: '#312e81',
+            },
+          },
+          boxShadow: { 'xs': '0 1px 2px 0 rgba(0,0,0,0.06)' },
+          keyframes: {
+            in: {
+              '0%': { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
+              '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+            },
+            out: {
+              '0%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+              '100%': { opacity: '0', transform: 'translateY(8px) scale(0.98)' },
+            },
+            pop: {
+              '0%': { opacity: '0', transform: 'scale(0.95)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
+            toastIn: {
+              '0%': { opacity: '0', transform: 'translateY(8px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            toastOut: {
+              '0%': { opacity: '1', transform: 'translateY(0)' },
+              '100%': { opacity: '0', transform: 'translateY(8px)' },
+            },
+            menuIn: {
+              '0%': { opacity: '0', transform: 'scale(0.96)' },
+              '100%': { opacity: '1', transform: 'scale(1)' },
+            },
+            skeleton: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.5' },
+            },
+          },
+          animation: {
+            'in': 'in 240ms cubic-bezier(0.22,1,0.36,1)',
+            'out': 'out 200ms ease',
+            'pop': 'pop 160ms ease-out',
+            'toast-in': 'toastIn 160ms ease-out',
+            'toast-out': 'toastOut 160ms ease-in',
+            'menu-in': 'menuIn 120ms ease-out',
+            'skeleton': 'skeleton 1.5s ease-in-out infinite',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style type="text/tailwindcss">
+    :root {
+        --sidebar-bg: #171717;
+        --sidebar-collapsed: #0a0a0a;
+        --page-bg: #0d0d0d;
+        --card-bg: #171717;
+        --border-dark: rgba(255,255,255,0.1);
+        --border-bright: rgba(255,255,255,0.2);
+    }
+    html, body { height: 100%; }
+    * { box-sizing: border-box; }
+
+    #toast-root { pointer-events: none; }
+
+    @layer components {
+        /* Buttons */
+        .btn {
+        @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none;
+        min-height: 40px;
+        }
+        .btn:focus-visible {
+        @apply ring-2 ring-blue-500/60 ring-offset-2 ring-offset-white dark:ring-offset-[#0d0d0d];
+        }
+        .btn-solid {
+        @apply bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 shadow-sm;
+        }
+        .btn-outline {
+        @apply border border-gray-300 bg-white hover:bg-gray-100 text-gray-900 dark:border-white/10 dark:bg-[#262626] dark:text-white dark:hover:bg-[#313131];
+        }
+        .btn-ghost {
+        @apply hover:bg-gray-100 text-gray-900 dark:text-gray-300 dark:hover:bg-[#262626];
+        }
+        .btn-danger {
+        @apply bg-red-600 text-white hover:bg-red-500;
+        }
+        .btn-icon { @apply h-10 w-10 p-0; }
+
+        /* Card */
+        .card {
+        @apply bg-white border border-gray-200 rounded-xl shadow-sm transition-all overflow-hidden relative;
+        }
+        .card:hover { @apply shadow-xl; }
+        .card-dark {
+        background: var(--card-bg);
+        border-color: var(--border-dark);
+        }
+        .card-dark:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+
+        /* Dropdown */
+        .dropdown {
+        @apply absolute z-50 min-w-[14rem] overflow-hidden rounded-lg border bg-white text-gray-900 shadow-lg animate-menu-in;
+        border-color: rgb(229 231 235);
+        }
+        .dropdown.dark {
+        @apply bg-[#171717] text-white;
+        border-color: rgba(255,255,255,0.1);
+        }
+        .dropdown-item {
+        @apply flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-100 cursor-pointer transition-colors;
+        min-height: 40px;
+        }
+        .dropdown-item.dark:hover { @apply bg-[#262626]; }
+        .dropdown-sep { @apply h-px my-1 bg-gray-200 dark:bg-white/10; }
+
+        /* Context menu */
+        .ctxmenu {
+        @apply fixed z-[100] min-w-[14rem] overflow-hidden rounded-lg border bg-white text-gray-900 shadow-2xl animate-menu-in;
+        border-color: rgb(229 231 235);
+        }
+        .ctxmenu.dark {
+        @apply bg-[#171717] text-white;
+        border-color: rgba(255,255,255,0.15);
+        }
+        .ctx-item {
+        @apply relative flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-gray-100 cursor-pointer transition-colors;
+        min-height: 40px;
+        }
+        .ctx-item.dark:hover { @apply bg-[#262626]; }
+        .ctx-sep { @apply h-px my-1 bg-gray-200 dark:bg-white/10; }
+
+        /* Tile hover toolbar */
+        .tile-toolbar {
+        opacity: 0;
+        transition: opacity .2s ease;
+        }
+        .tile-group:hover .tile-toolbar { opacity: 1; }
+
+        /* Tile fade */
+        .tile-group .tile-fade {
+        opacity: 0;
+        transition: opacity .15s ease;
+        }
+        .tile-group:hover .tile-fade { opacity: 1; }
+
+        /* Input */
+        .input {
+        @apply flex h-10 w-full min-w-0 rounded-md border bg-white px-3 py-2 text-base shadow-xs outline-none transition-[box-shadow,border-color] placeholder:text-gray-500 md:text-sm;
+        border-color: rgb(209 213 219);
+        min-height: 40px;
+        }
+        .input:focus {
+        @apply ring-2 ring-blue-500/40 border-blue-500;
+        }
+        .input.dark {
+        @apply bg-[#262626] border-white/10 text-white placeholder:text-gray-500;
+        }
+        .input.error {
+        @apply border-red-500 ring-2 ring-red-500/30;
+        }
+
+        /* Column active */
+        .col-active {
+        @apply bg-gray-900 text-white dark:bg-white dark:text-black shadow-md;
+        }
+
+        /* Tooltip */
+        .tooltip {
+        @apply absolute z-[200] px-2 py-1 text-xs bg-gray-900 text-white dark:bg-white dark:text-black rounded shadow-lg pointer-events-none opacity-0 transition-opacity whitespace-nowrap;
+        }
+        .tooltip.show { opacity: 1; }
+
+        /* Skeleton */
+        .skeleton {
+        @apply bg-gray-200 dark:bg-[#262626] rounded animate-skeleton;
+        }
+
+        /* Step numbers */
+        .step-num { @apply text-blue-500 font-semibold; }
+
+        /* File input */
+        .file-input { @apply sr-only; }
+
+        /* Help modal */
+        .modal-overlay {
+        @apply fixed inset-0 bg-black/50 z-[500] flex items-center justify-center p-4;
+        animation: fadeIn 0.15s ease;
+        }
+        .modal-content {
+        @apply bg-white dark:bg-[#171717] rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-200 dark:border-white/10 animate-pop;
+        }
+
+        /* Drag placeholder */
+        .drag-over {
+        @apply border-blue-500 border-2 border-dashed bg-blue-50 dark:bg-blue-900/20;
+        }
+
+        /* Inline validation */
+        .validation-msg {
+        @apply text-xs text-red-600 dark:text-red-400 mt-1;
+        }
+    }
+
+    /* Sidebar transitions (plain CSS safe) */
+    #sidebar {
+        transition: width 0.3s ease, transform 0.3s ease;
+    }
+    #sidebar.collapsed { width: 4rem; }
+    #sidebar.collapsed .sidebar-text,
+    #sidebar.collapsed .sidebar-section-title {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    /* Liquid glass buttons + diagonal shimmer */
+    .glass-btn {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        background: linear-gradient(to bottom right, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+        border: 1px solid rgba(255,255,255,0.14);
+        backdrop-filter: blur(10px) saturate(120%);
+        -webkit-backdrop-filter: blur(10px) saturate(120%);
+        transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .dark .glass-btn {
+        background: linear-gradient(to bottom right, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+        border-color: rgba(255,255,255,0.12);
+    }
+    .glass-btn:hover {
+        background: linear-gradient(to bottom right, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+        box-shadow: 0 8px 30px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+        transform: translateY(-1px);
+    }
+    .glass-btn:active { transform: translateY(0); }
+
+    /* Generic diagonal shimmer line (very slim) */
+    .glass-line { position: relative; overflow: hidden; }
+    .glass-line::after {
+        content: "";
+        position: absolute;
+        pointer-events: none;
+        width: 2px;
+        height: 170%;
+        top: -35%;
+        right: -40%;
+        transform: rotate(45deg);
+        background: linear-gradient(180deg, rgba(99,102,241,0) 0%, rgba(99,102,241,.9) 50%, rgba(99,102,241,0) 100%);
+        filter: blur(0.2px);
+        opacity: .9;
+        animation: diagonalGlow 6s linear infinite;
+    }
+    @keyframes diagonalGlow {
+        0%   { right: -40%; }
+        100% { right: 120%; }
+    }
+
+    /* Circular glass (collapse toggle) */
+    .glass-circle {
+        background: rgba(255,255,255,0.55);
+        border: 1px solid rgba(0,0,0,0.08);
+        backdrop-filter: blur(8px) saturate(130%);
+        -webkit-backdrop-filter: blur(8px) saturate(130%);
+        transition: transform .2s ease;
+    }
+    .dark .glass-circle {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.12);
+    }
+    .glass-circle:hover { transform: translateY(-1px); }
+    </style>
+
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-900 dark:bg-[var(--page-bg)] dark:text-white transition-colors duration-300">
+  <div class="flex h-screen">
+    
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 border-r border-gray-200 bg-white dark:bg-[var(--sidebar-bg)] dark:border-white/10 flex flex-col relative">
+    <!-- Collapse toggle -->
+    <button
+        id="sidebar-toggle"
+        class="glass-circle glass-line absolute -right-3 top-6 z-10 h-6 w-6 rounded-full border flex items-center justify-center hover:bg-gray-100/30 dark:hover:bg-[#313131]/40 transition-colors shadow-sm"
+        aria-label="Toggle sidebar"
+        title="Toggle sidebar (Ctrl+B)"
+    >
+        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+    </button>
+
+    <div class="p-6 border-b border-gray-200 dark:border-white/10">
+        <h1 class="text-2xl font-bold flex items-center gap-2">
+        <i data-lucide="layout" class="h-6 w-6 flex-shrink-0"></i>
+        <span class="sidebar-text transition-opacity duration-300">ONE DOCK</span>
+        </h1>
+        <p class="text-sm mt-1 text-gray-600 dark:text-gray-400 sidebar-text transition-opacity duration-300">Multi-site Dashboard</p>
+    </div>
+
+    <div class="p-4 space-y-6 flex-1 overflow-y-auto">
+        <!-- Quick Presets -->
+        <section>
+        <h3 class="sidebar-section-title text-[11px] tracking-wide font-semibold uppercase mb-2 text-gray-700 dark:text-gray-300 transition-opacity duration-300">Quick Presets</h3>
+        <div id="preset-buttons" class="grid grid-cols-2 gap-2"></div>
+        </section>
+
+        <!-- Saved Layouts -->
+        <section>
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="sidebar-section-title text-[11px] tracking-wide font-semibold uppercase text-gray-700 dark:text-gray-300 transition-opacity duration-300">Saved Layouts</h3>
+        </div>
+        <div id="saved-layouts" class="space-y-1">
+            <p class="text-xs text-gray-400 dark:text-gray-500 sidebar-text">No saved layouts yet</p>
+        </div>
+        </section>
+
+        <!-- Layout columns -->
+        <section>
+        <h3 class="sidebar-section-title text-[11px] tracking-wide font-semibold uppercase mb-2 text-gray-700 dark:text-gray-300 transition-opacity duration-300">Layout</h3>
+        <div class="flex gap-2">
+            <button data-col="1" class="btn btn-outline h-10 px-3 flex items-center gap-1 flex-1 justify-center" aria-label="1 column" title="1 column">
+            <i data-lucide="columns" class="h-3 w-3"></i> <span class="sidebar-text">1</span>
+            </button>
+            <button data-col="2" class="btn btn-outline h-10 px-3 flex items-center gap-1 flex-1 justify-center" aria-label="2 columns" title="2 columns">
+            <i data-lucide="columns" class="h-3 w-3"></i> <span class="sidebar-text">2</span>
+            </button>
+            <button data-col="3" class="btn btn-outline h-10 px-3 flex items-center gap-1 flex-1 justify-center" aria-label="3 columns" title="3 columns">
+            <i data-lucide="columns" class="h-3 w-3"></i> <span class="sidebar-text">3</span>
+            </button>
+            <button data-col="4" class="btn btn-outline h-10 px-3 flex items-center gap-1 flex-1 justify-center" aria-label="4 columns" title="4 columns">
+            <i data-lucide="columns" class="h-3 w-3"></i> <span class="sidebar-text">4</span>
+            </button>
+        </div>
+        </section>
+    </div>
+
+    <div class="p-4 border-t border-gray-200 dark:border-white/10 space-y-2">
+        <button
+        id="toggle-theme"
+        class="btn glass-btn glass-line w-full justify-start"
+        aria-label="Toggle theme"
+        title="Toggle theme (T)"
+        >
+        <span class="flex items-center w-full">
+            <i data-lucide="sun" class="h-4 w-4 mr-2 hidden dark:inline flex-shrink-0"></i>
+            <i data-lucide="moon" class="h-4 w-4 mr-2 dark:hidden flex-shrink-0"></i>
+            <span class="sidebar-text transition-opacity duration-300">
+            <span class="dark:inline hidden">Light</span>
+            <span class="dark:hidden inline">Dark</span>
+            <span class="ml-1">Mode</span>
+            </span>
+        </span>
+        </button>
+
+        <button
+        id="help-btn"
+        class="btn glass-btn glass-line w-full justify-start"
+        aria-label="Show keyboard shortcuts"
+        title="Show shortcuts (?)"
+        >
+        <i data-lucide="help-circle" class="h-4 w-4 mr-2 flex-shrink-0"></i>
+        <span class="sidebar-text transition-opacity duration-300">Help & Shortcuts</span>
+        </button>
+    </div>
+    </aside>
+
+
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col">
+      <!-- Header -->
+      <header class="border-b border-gray-200 bg-white dark:bg-[var(--sidebar-bg)] dark:border-white/10 p-4">
+        <div class="flex items-center gap-2">
+          <div class="flex-1 relative">
+            <input id="url-input" class="input dark" placeholder="Paste URL or multiple URLs..." aria-label="URL input" />
+            <div id="input-validation" class="validation-msg hidden"></div>
+          </div>
+          
+          <button id="add-btn" class="btn btn-solid h-10 px-4" aria-label="Add URL (A)" title="Add URL (A)">
+            <i data-lucide="plus" class="h-4 w-4"></i> <span>Add</span>
+          </button>
+          <button id="paste-btn" class="btn btn-outline h-10 px-4" aria-label="Paste from clipboard (P)" title="Paste from clipboard (P)">
+            <i data-lucide="copy" class="h-4 w-4"></i> <span>Paste</span>
+          </button>
+          <button id="ai-btn" class="btn btn-outline h-10 px-4" aria-label="AI Layout suggestion" title="AI Layout suggestion">
+            <i data-lucide="sparkles" class="h-4 w-4"></i> <span>AI Layout</span>
+          </button>
+          <button id="save-toggle-btn" class="btn btn-outline h-10 px-4" aria-label="Save layout (S)" title="Save layout (S)">
+            <i data-lucide="save" class="h-4 w-4"></i> <span>Save</span>
+          </button>
+
+          <!-- More (dropdown trigger) -->
+          <div class="relative" id="more-wrap">
+            <button id="more-btn" class="btn btn-outline btn-icon" aria-haspopup="menu" aria-expanded="false" aria-label="More options" title="More options">
+              <i data-lucide="more-vertical" class="h-4 w-4"></i>
+            </button>
+            <!-- Dropdown -->
+            <div id="more-menu" class="dropdown hidden dark">
+              <div class="dropdown-item" data-action="share" role="menuitem">
+                <i data-lucide="share-2" class="h-4 w-4"></i> Share Link
+              </div>
+              <div class="dropdown-item" data-action="export" role="menuitem">
+                <i data-lucide="download" class="h-4 w-4"></i> Export
+              </div>
+              <label class="dropdown-item cursor-pointer" role="menuitem">
+                <i data-lucide="upload" class="h-4 w-4"></i> Import
+                <input id="import-input" type="file" accept=".json" class="file-input" />
+              </label>
+              <div class="dropdown-sep"></div>
+              <div class="dropdown-item text-red-600 dark:text-red-400" data-action="clear" role="menuitem">
+                <i data-lucide="trash-2" class="h-4 w-4"></i> Clear All
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Save dialog -->
+        <div id="save-row" class="mt-3 hidden items-center gap-2 animate-in">
+          <div class="flex-1 relative">
+            <input id="layout-name-input" class="input dark" placeholder="Layout name..." aria-label="Layout name" />
+            <div id="save-validation" class="validation-msg hidden"></div>
+          </div>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" id="merge-mode" class="rounded" />
+            <span class="text-gray-700 dark:text-gray-300">Merge</span>
+          </label>
+          <button id="save-do-btn" class="btn btn-solid h-10 px-4">Save</button>
+          <button id="save-cancel-btn" class="btn btn-ghost h-10 px-4">Cancel</button>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="flex-1 p-6 overflow-auto">
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden animate-in">
+          <div class="flex flex-col items-center justify-center h-full">
+            <div class="text-center max-w-md p-8 rounded-2xl bg-white border border-gray-200 dark:bg-[#171717] dark:border-white/10 shadow-lg">
+              <i data-lucide="layout" class="h-16 w-16 mx-auto mb-4 text-gray-400 dark:text-gray-600"></i>
+              <h2 class="text-2xl font-bold mb-2">Welcome to ONE DOCK</h2>
+              <p class="mb-6 text-gray-600 dark:text-gray-400">Start by adding websites or choosing a preset</p>
+              <div class="space-y-2 text-left">
+                <div class="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                  <span class="step-num">1.</span>
+                  <span>Paste URLs or select a quick preset</span>
+                </div>
+                <div class="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                  <span class="step-num">2.</span>
+                  <span>Arrange column layout</span>
+                </div>
+                <div class="flex items-start gap-2 text-gray-700 dark:text-gray-300">
+                  <span class="step-num">3.</span>
+                  <span>Save and share the layout</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid -->
+        <div id="tiles-grid" class="grid gap-4 h-full"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Context Menu (global) -->
+  <div id="ctx-menu" class="ctxmenu hidden dark" role="menu">
+    <div class="ctx-item" data-ctx="open" role="menuitem" tabindex="0">
+      <i data-lucide="external-link" class="h-4 w-4"></i> Open in New Tab
+    </div>
+    <div class="ctx-item" data-ctx="copy" role="menuitem" tabindex="0">
+      <i data-lucide="copy" class="h-4 w-4"></i> Copy URL
+    </div>
+    <div class="ctx-item" data-ctx="refresh" role="menuitem" tabindex="0">
+      <i data-lucide="refresh-cw" class="h-4 w-4"></i> Refresh
+    </div>
+    <div class="ctx-item" data-ctx="fullscreen" role="menuitem" tabindex="0">
+      <i data-lucide="maximize-2" class="h-4 w-4"></i> Fullscreen
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item text-red-600 dark:text-red-400" data-ctx="remove" role="menuitem" tabindex="0">
+      <i data-lucide="trash-2" class="h-4 w-4"></i> Remove
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="hidden modal-overlay" role="dialog" aria-labelledby="help-title" aria-modal="true">
+    <div class="modal-content">
+      <div class="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
+        <h2 id="help-title" class="text-xl font-bold flex items-center gap-2">
+          <i data-lucide="keyboard" class="h-5 w-5"></i>
+          Keyboard Shortcuts
+        </h2>
+        <button id="help-close" class="btn btn-ghost btn-icon" aria-label="Close help">
+          <i data-lucide="x" class="h-5 w-5"></i>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h3 class="font-semibold mb-2 text-gray-700 dark:text-gray-300">General</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span>Toggle theme</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">T</kbd></div>
+              <div class="flex justify-between"><span>Show help</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">?</kbd></div>
+              <div class="flex justify-between"><span>Toggle sidebar</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">Ctrl+B</kbd></div>
+            </div>
+          </div>
+          <div>
+            <h3 class="font-semibold mb-2 text-gray-700 dark:text-gray-300">Actions</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span>Add URL</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">A</kbd></div>
+              <div class="flex justify-between"><span>Paste URLs</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">P</kbd></div>
+              <div class="flex justify-between"><span>Save layout</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">S</kbd></div>
+              <div class="flex justify-between"><span>Close dialogs</span><kbd class="px-2 py-1 bg-gray-100 dark:bg-[#262626] rounded">Esc</kbd></div>
+            </div>
+          </div>
+        </div>
+        <div class="pt-4 border-t border-gray-200 dark:border-white/10">
+          <h3 class="font-semibold mb-2 text-gray-700 dark:text-gray-300">Tips</h3>
+          <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+            <li>Right-click tiles for quick actions</li>
+            <li>Hover over buttons for tooltips</li>
+            <li>Drag tiles to reorder (coming soon)</li>
+            <li>Paste multiple URLs separated by newlines</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div id="toast-root" class="fixed top-4 right-4 flex flex-col gap-2 z-[999]" role="status" aria-live="polite"></div>
+
+  <script>
+    // ==================== State & Constants ====================
+    const state = {
+      tiles: [],
+      layouts: [],
+      columns: 3,
+      showSave: false,
+      sidebarCollapsed: false,
+      draggedTileId: null,
+    };
+
+    const presets = [
+      { name: 'Dev', icon: 'code', urls: ['https://developer.mozilla.org', 'https://github.com', 'https://stackoverflow.com'], columns: 3 },
+      { name: 'Trading', icon: 'trending-up', urls: ['https://tradingview.com', 'https://coinmarketcap.com', 'https://finance.yahoo.com', 'https://investing.com'], columns: 2 },
+      { name: 'Research', icon: 'book-open', urls: ['https://scholar.google.com', 'https://arxiv.org', 'https://pubmed.ncbi.nlm.nih.gov'], columns: 3 },
+      { name: 'Focus', icon: 'maximize-2', urls: ['https://notion.so'], columns: 1 },
+    ];
+
+    const LS_LAYOUTS = 'onedock.layouts';
+    const LS_THEME = 'onedock.theme';
+    const LS_SIDEBAR = 'onedock.sidebar';
+    const LS_SESSION = 'onedock.session';
+
+    // ==================== Utilities ====================
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+    const uid = () => Date.now().toString() + '-' + Math.random().toString(36).slice(2, 7);
+    const hostname = (url) => {
+      try { return new URL(url).hostname.replace('www.', ''); } catch { return url; }
+    };
+
+    function b64encode(obj) {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+    }
+    function b64decode(str) {
+      return JSON.parse(decodeURIComponent(escape(atob(str))));
+    }
+
+    function showToast(msg, type = 'success') {
+      const root = $('#toast-root');
+      const el = document.createElement('div');
+      el.className = 'pointer-events-auto rounded-lg border bg-white text-gray-900 dark:bg-[#171717] dark:text-white dark:border-white/10 shadow-lg px-4 py-3 text-sm flex items-center gap-2 animate-toast-in';
+      const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+      el.innerHTML = `<i data-lucide="${icon}" class="h-4 w-4 flex-shrink-0"></i><span>${msg}</span>`;
+      root.appendChild(el);
+      lucide.createIcons({ nodes: [el] });
+      setTimeout(() => {
+        el.classList.remove('animate-toast-in');
+        el.classList.add('animate-toast-out');
+        setTimeout(() => el.remove(), 160);
+      }, 3000);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard?.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    }
+
+    function persistLayouts() {
+      try { localStorage.setItem(LS_LAYOUTS, JSON.stringify(state.layouts)); } catch {}
+    }
+    function loadLayouts() {
+      try {
+        const raw = localStorage.getItem(LS_LAYOUTS);
+        if (raw) state.layouts = JSON.parse(raw);
+      } catch {}
+    }
+
+    function persistTheme() {
+      try {
+        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        localStorage.setItem(LS_THEME, theme);
+      } catch {}
+    }
+    function loadTheme() {
+      try {
+        const saved = localStorage.getItem(LS_THEME);
+        if (saved === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch {}
+    }
+
+    function persistSidebar() {
+      try { localStorage.setItem(LS_SIDEBAR, state.sidebarCollapsed ? 'collapsed' : 'expanded'); } catch {}
+    }
+    function loadSidebar() {
+      try {
+        const saved = localStorage.getItem(LS_SIDEBAR);
+        if (saved === 'collapsed') {
+          state.sidebarCollapsed = true;
+          $('#sidebar').classList.add('collapsed');
+          const icon = $('#sidebar-toggle i');
+          icon.setAttribute('data-lucide', 'chevron-right');
+          lucide.createIcons({ nodes: [icon] });
+        }
+      } catch {}
+    }
+
+    function persistSession() {
+      try {
+        localStorage.setItem(LS_SESSION, JSON.stringify({ tiles: state.tiles, columns: state.columns }));
+      } catch {}
+    }
+    function loadSession() {
+      try {
+        const raw = localStorage.getItem(LS_SESSION);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data.tiles) && data.tiles.length > 0) {
+            state.tiles = data.tiles;
+            state.columns = data.columns || 3;
+          }
+        }
+      } catch {}
+    }
+
+    function validateURL(raw) {
+      if (!raw || !raw.trim()) return { valid: false, msg: 'URL is required' };
+      let url = raw.trim();
+      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+      try {
+        new URL(url);
+        return { valid: true, url };
+      } catch {
+        return { valid: false, msg: 'Invalid URL format' };
+      }
+    }
+
+    function showValidation(inputId, msgId, message) {
+      const input = $(inputId);
+      const msg = $(msgId);
+      input.classList.add('error');
+      msg.textContent = message;
+      msg.classList.remove('hidden');
+      setTimeout(() => {
+        input.classList.remove('error');
+        msg.classList.add('hidden');
+      }, 3000);
+    }
+
+    // ==================== Core Actions ====================
+    function addWebsite(raw) {
+      const result = validateURL(raw);
+      if (!result.valid) {
+        showValidation('#url-input', '#input-validation', result.msg);
+        return;
+      }
+      state.tiles.push({
+        id: uid(),
+        url: result.url,
+        title: hostname(result.url),
+      });
+      $('#url-input').value = '';
+      renderTiles();
+      persistSession();
+      showToast('Website added successfully');
+    }
+
+    function removeTile(id) {
+      const idx = state.tiles.findIndex(t => t.id === id);
+      if (idx >= 0) {
+        state.tiles.splice(idx, 1);
+        renderTiles();
+        persistSession();
+        showToast('Website removed');
+      }
+    }
+
+    function loadPreset(p, merge = false) {
+      const newTiles = p.urls.map((url, i) => ({
+        id: uid() + '-' + i,
+        url,
+        title: hostname(url),
+      }));
+      if (merge) {
+        state.tiles = [...state.tiles, ...newTiles];
+      } else {
+        state.tiles = newTiles;
+        state.columns = p.columns;
+      }
+      renderAll();
+      persistSession();
+      showToast(p.name + ' preset ' + (merge ? 'merged' : 'loaded'));
+    }
+
+    function saveLayoutByName(name) {
+      const trimmed = (name || '').trim();
+      if (!trimmed) {
+        showValidation('#layout-name-input', '#save-validation', 'Layout name is required');
+        return;
+      }
+      if (state.tiles.length === 0) {
+        showToast('Add some websites before saving', 'error');
+        return;
+      }
+      const layout = {
+        id: uid(),
+        name: trimmed,
+        tiles: JSON.parse(JSON.stringify(state.tiles)),
+        columns: state.columns,
+      };
+      state.layouts.push(layout);
+      persistLayouts();
+      state.showSave = false;
+      $('#layout-name-input').value = '';
+      renderAll();
+      showToast('Layout saved successfully');
+    }
+
+    function loadLayout(layout) {
+      state.tiles = JSON.parse(JSON.stringify(layout.tiles));
+      state.columns = layout.columns;
+      renderAll();
+      persistSession();
+      showToast(layout.name + ' loaded');
+    }
+
+    function deleteLayout(id) {
+      const idx = state.layouts.findIndex(l => l.id === id);
+      if (idx >= 0) {
+        state.layouts.splice(idx, 1);
+        persistLayouts();
+        renderSavedLayouts();
+        showToast('Layout deleted');
+      }
+    }
+
+    function shareLayout() {
+      if (state.tiles.length === 0) {
+        showToast('Add some websites first', 'error');
+        return;
+      }
+      const stateObj = { tiles: state.tiles, columns: state.columns };
+      const encoded = b64encode(stateObj);
+      const shareUrl = `${location.origin}${location.pathname}?state=${encoded}`;
+      copyToClipboard(shareUrl).then(() => showToast('Share link copied to clipboard'));
+    }
+
+    function exportLayout() {
+      if (state.tiles.length === 0) {
+        showToast('Add some websites first', 'error');
+        return;
+      }
+      const data = JSON.stringify({ tiles: state.tiles, columns: state.columns }, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'onedock-layout-' + Date.now() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Layout exported');
+    }
+
+    function importLayoutFromFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!Array.isArray(data.tiles)) throw new Error('Invalid format');
+          state.tiles = data.tiles;
+          state.columns = data.columns || 3;
+          renderAll();
+          persistSession();
+          showToast('Layout imported successfully');
+        } catch {
+          showToast('Failed to import layout', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function suggestLayout() {
+      const n = state.tiles.length;
+      if (n === 0) { showToast('Add some websites first', 'error'); return; }
+      let cols = 2;
+      if (n === 1) cols = 1;
+      else if (n === 2) cols = 2;
+      else if (n <= 4) cols = 2;
+      else if (n <= 6) cols = 3;
+      else cols = 4;
+      state.columns = cols;
+      renderAll();
+      persistSession();
+      showToast(`AI suggests ${cols} columns for ${n} websites`);
+    }
+
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const validUrls = [];
+        for (const line of lines) {
+          const result = validateURL(line);
+          if (result.valid) validUrls.push(result.url);
+        }
+        if (validUrls.length > 0) {
+          for (const url of validUrls) {
+            state.tiles.push({
+              id: uid(),
+              url,
+              title: hostname(url),
+            });
+          }
+          renderTiles();
+          persistSession();
+          showToast(`${validUrls.length} URL(s) added from clipboard`);
+        } else {
+          showToast('No valid URLs found in clipboard', 'error');
+        }
+      } catch {
+        showToast('Failed to read clipboard', 'error');
+      }
+    }
+
+    function toggleSidebar() {
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+      const sidebar = $('#sidebar');
+      const icon = $('#sidebar-toggle i');
+      sidebar.classList.toggle('collapsed');
+      icon.setAttribute('data-lucide', state.sidebarCollapsed ? 'chevron-right' : 'chevron-left');
+      lucide.createIcons({ nodes: [icon] });
+      persistSidebar();
+    }
+
+    function openFullscreen(tileId) {
+      const tile = state.tiles.find(t => t.id === tileId);
+      if (tile) window.open(tile.url, '_blank');
+    }
+
+    // ==================== Rendering ====================
+    function renderPresets() {
+      const root = $('#preset-buttons');
+      root.innerHTML = '';
+      for (const p of presets) {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline h-10 px-2 justify-start gap-2 text-xs';
+        btn.innerHTML = `<i data-lucide="${p.icon}" class="h-4 w-4 flex-shrink-0"></i> <span class="sidebar-text">${p.name}</span>`;
+        btn.setAttribute('aria-label', `Load ${p.name} preset`);
+        btn.setAttribute('title', `Load ${p.name} preset`);
+        btn.addEventListener('click', () => loadPreset(p));
+        btn.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          loadPreset(p, true);
+        });
+        root.appendChild(btn);
+      }
+    }
+
+    function renderSavedLayouts() {
+      const root = $('#saved-layouts');
+      root.innerHTML = '';
+      if (state.layouts.length === 0) {
+        root.innerHTML = `<p class="text-xs text-gray-400 dark:text-gray-500 sidebar-text">No saved layouts yet</p>`;
+        return;
+      }
+      for (const layout of state.layouts) {
+        const wrap = document.createElement('div');
+        wrap.className = 'flex items-center gap-1';
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-ghost w-full justify-start h-10 px-2 text-sm flex-1';
+        btn.innerHTML = `<i data-lucide="layout" class="h-3 w-3 mr-2 flex-shrink-0"></i> <span class="sidebar-text truncate">${layout.name}</span>`;
+        btn.setAttribute('aria-label', `Load ${layout.name}`);
+        btn.setAttribute('title', `Load ${layout.name}`);
+        btn.addEventListener('click', () => loadLayout(layout));
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-ghost h-10 w-8 p-0 flex-shrink-0';
+        delBtn.innerHTML = `<i data-lucide="trash-2" class="h-3 w-3"></i>`;
+        delBtn.setAttribute('aria-label', `Delete ${layout.name}`);
+        delBtn.setAttribute('title', `Delete ${layout.name}`);
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete layout "${layout.name}"?`)) deleteLayout(layout.id);
+        });
+        wrap.appendChild(btn);
+        wrap.appendChild(delBtn);
+        root.appendChild(wrap);
+      }
+    }
+
+    function renderColumnsButtons() {
+      $$('#sidebar [data-col]').forEach(b => {
+        const col = Number(b.getAttribute('data-col'));
+        b.classList.remove('col-active');
+        if (col === state.columns) b.classList.add('col-active');
+        b.onclick = () => {
+          state.columns = col;
+          renderTiles();
+          renderColumnsButtons();
+          persistSession();
+        };
+      });
+    }
+
+    function renderTiles() {
+      const grid = $('#tiles-grid');
+      grid.style.gridTemplateColumns = `repeat(${state.columns}, minmax(0, 1fr))`;
+      grid.innerHTML = '';
+
+      if (state.tiles.length === 0) {
+        $('#empty-state').classList.remove('hidden');
+        return;
+      } else {
+        $('#empty-state').classList.add('hidden');
+      }
+
+      for (const tile of state.tiles) {
+        const wrap = document.createElement('div');
+        wrap.className = 'animate-in';
+        wrap.dataset.tileId = tile.id;
+        wrap.draggable = true;
+
+        const card = document.createElement('div');
+        card.className = 'card dark:card-dark h-full tile-group relative';
+
+        // Skeleton loader
+        const skeleton = document.createElement('div');
+        skeleton.className = 'skeleton absolute inset-0 z-0';
+        card.appendChild(skeleton);
+
+        // Hover toolbar
+        const toolbar = document.createElement('div');
+        toolbar.className = 'tile-toolbar absolute top-2 right-2 z-20 flex gap-1';
+        
+        const refreshBtn = createToolbarBtn('refresh-cw', 'Refresh', () => {
+          const iframe = card.querySelector('iframe');
+          if (iframe) iframe.src = iframe.src;
+        });
+        const openBtn = createToolbarBtn('external-link', 'Open in new tab', () => {
+          window.open(tile.url, '_blank');
+        });
+        const copyBtn = createToolbarBtn('copy', 'Copy URL', () => {
+          copyToClipboard(tile.url).then(() => showToast('URL copied'));
+        });
+        const fullBtn = createToolbarBtn('maximize-2', 'Fullscreen', () => {
+          openFullscreen(tile.id);
+        });
+        const removeBtn = createToolbarBtn('x', 'Remove', () => removeTile(tile.id), 'btn-danger');
+
+        toolbar.append(refreshBtn, openBtn, copyBtn, fullBtn, removeBtn);
+
+        // Title badge
+        const titleWrap = document.createElement('div');
+        titleWrap.className = 'absolute top-2 left-2 z-10 tile-fade';
+        const badge = document.createElement('div');
+        badge.className = 'px-3 py-1.5 rounded-md text-xs font-medium bg-white/95 text-gray-900 dark:bg-black/70 dark:text-white shadow-sm backdrop-blur-sm';
+        badge.textContent = tile.title;
+        titleWrap.appendChild(badge);
+
+        // Iframe
+        const iframe = document.createElement('iframe');
+        iframe.src = tile.url;
+        iframe.title = tile.title;
+        iframe.className = 'w-full h-[420px] md:h-[560px] lg:h-[640px] border-0 relative z-10';
+        iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+        iframe.setAttribute('loading', 'lazy');
+        iframe.addEventListener('load', () => {
+          skeleton.remove();
+        });
+        iframe.addEventListener('error', () => {
+          skeleton.innerHTML = '<div class="flex items-center justify-center h-full text-sm text-red-600 dark:text-red-400">Failed to load</div>';
+          skeleton.classList.remove('animate-skeleton');
+        });
+
+        // Context menu
+        card.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          openCtxMenu(e.clientX, e.clientY, tile.id);
+        });
+
+        // Drag events
+        wrap.addEventListener('dragstart', (e) => {
+          state.draggedTileId = tile.id;
+          wrap.classList.add('opacity-50');
+        });
+        wrap.addEventListener('dragend', () => {
+          wrap.classList.remove('opacity-50');
+          state.draggedTileId = null;
+        });
+        wrap.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (state.draggedTileId && state.draggedTileId !== tile.id) {
+            wrap.classList.add('drag-over');
+          }
+        });
+        wrap.addEventListener('dragleave', () => {
+          wrap.classList.remove('drag-over');
+        });
+        wrap.addEventListener('drop', (e) => {
+          e.preventDefault();
+          wrap.classList.remove('drag-over');
+          if (state.draggedTileId && state.draggedTileId !== tile.id) {
+            const fromIdx = state.tiles.findIndex(t => t.id === state.draggedTileId);
+            const toIdx = state.tiles.findIndex(t => t.id === tile.id);
+            if (fromIdx >= 0 && toIdx >= 0) {
+              const [moved] = state.tiles.splice(fromIdx, 1);
+              state.tiles.splice(toIdx, 0, moved);
+              renderTiles();
+              persistSession();
+              showToast('Tile reordered');
+            }
+          }
+        });
+
+        card.appendChild(toolbar);
+        card.appendChild(titleWrap);
+        card.appendChild(iframe);
+        wrap.appendChild(card);
+        grid.appendChild(wrap);
+      }
+
+      lucide.createIcons();
+    }
+
+    function createToolbarBtn(icon, label, onClick, extraClass = '') {
+      const btn = document.createElement('button');
+      btn.className = `btn ${extraClass || 'btn-outline dark:bg-black/50 dark:hover:bg-black/70'} h-8 w-8 p-0 shadow-md`;
+      btn.innerHTML = `<i data-lucide="${icon}" class="h-3 w-3"></i>`;
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onClick();
+      });
+      return btn;
+    }
+
+    function renderSaveRow() {
+      const row = $('#save-row');
+      row.style.display = state.showSave ? 'flex' : 'none';
+    }
+
+    function renderAll() {
+      renderPresets();
+      renderSavedLayouts();
+      renderColumnsButtons();
+      renderTiles();
+      renderSaveRow();
+      lucide.createIcons();
+    }
+
+    // ==================== Context Menu ====================
+    const ctx = $('#ctx-menu');
+    let ctxTargetTileId = null;
+
+    function openCtxMenu(x, y, tileId) {
+      ctxTargetTileId = tileId;
+      ctx.style.left = x + 'px';
+      ctx.style.top = y + 'px';
+      ctx.classList.remove('hidden');
+      positionWithinViewport(ctx);
+      lucide.createIcons();
+    }
+    function closeCtxMenu() {
+      ctx.classList.add('hidden');
+      ctxTargetTileId = null;
+    }
+    function positionWithinViewport(el) {
+      const rect = el.getBoundingClientRect();
+      let left = rect.left, top = rect.top;
+      if (rect.right > window.innerWidth) left = window.innerWidth - rect.width - 8;
+      if (rect.bottom > window.innerHeight) top = window.innerHeight - rect.height - 8;
+      el.style.left = Math.max(8, left) + 'px';
+      el.style.top = Math.max(8, top) + 'px';
+    }
+
+    ctx.addEventListener('click', (e) => {
+      const act = e.target.closest('[data-ctx]')?.getAttribute('data-ctx');
+      if (!act || !ctxTargetTileId) return;
+      const tile = state.tiles.find(t => t.id === ctxTargetTileId);
+      if (!tile) return;
+
+      if (act === 'open') {
+        window.open(tile.url, '_blank');
+      } else if (act === 'copy') {
+        copyToClipboard(tile.url).then(() => showToast('URL copied'));
+      } else if (act === 'refresh') {
+        const node = document.querySelector(`[data-tile-id="${tile.id}"] iframe`);
+        if (node) node.src = node.src;
+      } else if (act === 'fullscreen') {
+        openFullscreen(tile.id);
+      } else if (act === 'remove') {
+        removeTile(tile.id);
+      }
+      closeCtxMenu();
+    });
+
+    // ==================== More Menu ====================
+    function toggleMoreMenu(force) {
+      const menu = $('#more-menu');
+      const btn = $('#more-btn');
+      const open = (typeof force === 'boolean') ? force : menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) {
+        const bcr = btn.getBoundingClientRect();
+        menu.style.right = '0px';
+        menu.style.top = (btn.offsetHeight + 8) + 'px';
+        if (document.documentElement.classList.contains('dark')) menu.classList.add('dark');
+        else menu.classList.remove('dark');
+        lucide.createIcons();
+      }
+    }
+
+    $('#more-btn').addEventListener('click', () => toggleMoreMenu());
+    $('#more-menu').addEventListener('click', (e) => {
+      const item = e.target.closest('.dropdown-item');
+      if (!item) return;
+      const action = item.getAttribute('data-action');
+      if (action === 'share') shareLayout();
+      else if (action === 'export') exportLayout();
+      else if (action === 'clear') {
+        if (confirm('Clear all tiles?')) {
+          state.tiles = [];
+          renderTiles();
+          persistSession();
+          showToast('All tiles cleared');
+        }
+      }
+      toggleMoreMenu(false);
+    });
+    $('#import-input').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      importLayoutFromFile(file);
+      e.target.value = '';
+    });
+
+    // ==================== Help Modal ====================
+    function openHelpModal() {
+      $('#help-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeHelpModal() {
+      $('#help-modal').classList.add('hidden');
+    }
+    $('#help-btn').addEventListener('click', openHelpModal);
+    $('#help-close').addEventListener('click', closeHelpModal);
+    $('#help-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'help-modal') closeHelpModal();
+    });
+
+    // ==================== Event Handlers ====================
+    $('#url-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addWebsite($('#url-input').value);
+    });
+    $('#add-btn').addEventListener('click', () => addWebsite($('#url-input').value));
+    $('#paste-btn').addEventListener('click', pasteFromClipboard);
+    $('#ai-btn').addEventListener('click', suggestLayout);
+    $('#save-toggle-btn').addEventListener('click', () => {
+      state.showSave = !state.showSave;
+      renderSaveRow();
+      if (state.showSave) $('#layout-name-input').focus();
+    });
+    $('#save-do-btn').addEventListener('click', () => saveLayoutByName($('#layout-name-input').value));
+    $('#layout-name-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveLayoutByName($('#layout-name-input').value);
+    });
+    $('#save-cancel-btn').addEventListener('click', () => {
+      state.showSave = false;
+      renderSaveRow();
+    });
+    $('#toggle-theme').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      persistTheme();
+      lucide.createIcons();
+    });
+    $('#sidebar-toggle').addEventListener('click', toggleSidebar);
+    $('#tiles-grid').addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // Global clicks
+    document.addEventListener('click', (e) => {
+      if (!ctx.contains(e.target)) closeCtxMenu();
+      const moreMenu = $('#more-menu');
+      const btn = $('#more-btn');
+      if (!moreMenu.classList.contains('hidden') && !moreMenu.contains(e.target) && !btn.contains(e.target)) {
+        toggleMoreMenu(false);
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Escape
+      if (e.key === 'Escape') {
+        closeCtxMenu();
+        toggleMoreMenu(false);
+        closeHelpModal();
+        if (state.showSave) { state.showSave = false; renderSaveRow(); }
+        return;
+      }
+
+      // Skip if typing in input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      // T - theme
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        $('#toggle-theme').click();
+      }
+      // A - add
+      else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        $('#url-input').focus();
+      }
+      // P - paste
+      else if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        pasteFromClipboard();
+      }
+      // S - save
+      else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        $('#save-toggle-btn').click();
+      }
+      // ? - help
+      else if (e.key === '?') {
+        e.preventDefault();
+        openHelpModal();
+      }
+      // Ctrl+B - sidebar
+      else if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    });
+
+    // ==================== URL State Loader ====================
+    function tryLoadStateFromQuery() {
+      const params = new URLSearchParams(location.search);
+      const s = params.get('state');
+      if (!s) return false;
+      try {
+        const data = b64decode(s);
+        if (Array.isArray(data.tiles)) {
+          state.tiles = data.tiles.map(t => ({
+            id: uid(),
+            url: t.url,
+            title: hostname(t.url),
+          }));
+        }
+        if (data.columns) state.columns = data.columns;
+        history.replaceState({}, '', location.pathname);
+        return true;
+      } catch {}
+      return false;
+    }
+
+    // ==================== Auto-save Session ====================
+    setInterval(() => {
+      if (state.tiles.length > 0) persistSession();
+    }, 10000); // Every 10 seconds
+
+    // ==================== Init ====================
+    function init() {
+      loadTheme();
+      loadLayouts();
+      loadSidebar();
+      const fromQuery = tryLoadStateFromQuery();
+      if (!fromQuery) loadSession();
+      renderAll();
+      lucide.createIcons();
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
